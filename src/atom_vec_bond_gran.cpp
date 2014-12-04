@@ -24,6 +24,7 @@ See the README file in the top-level LAMMPS directory.
 #include "domain.h"
 #include "modify.h"
 #include "fix.h"
+#include "string.h"
 #include "memory.h"
 #include "error.h"
 #include "comm.h"
@@ -62,6 +63,23 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp) : AtomVec(lmp)
 }
 
 /* ---------------------------------------------------------------------- */
+
+void AtomVecBondGran::settings(int narg, char **arg)
+{
+
+  if (narg != 4) error->all(FLERR,"Invalid atom_style bond/gran command,expecting exactly 4 arguments");
+
+  if(strcmp(arg[0],"n_bondtypes"))
+    error->all(FLERR,"Illegal atom_style bond/gran command, expecting 'n_bondtypes'");
+
+  atom->nbondtypes = atoi(arg[1]);
+
+  if(strcmp(arg[2],"bonds_per_atom"))
+    error->all(FLERR,"Illegal atom_style bond/gran command, expecting 'bonds_per_atom'");
+
+  atom->bond_per_atom = atoi(arg[3]);
+
+}
 
 void AtomVecBondGran::init()
 {
@@ -842,12 +860,12 @@ void AtomVecBondGran::pack_data(double **buf)
 
 void AtomVecBondGran::pack_data(double **buf,int tag_offset)
 {
-  
+  error->all(FLERR,"Add usefull code here");
 }
 
 void AtomVecBondGran::write_data(FILE *fp, int n, double **buf)
 {
-
+  error->all(FLERR,"Add usefull code here");
 }
 
 /* ----------------------------------------------------------------------

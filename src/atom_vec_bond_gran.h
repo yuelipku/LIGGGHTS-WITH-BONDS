@@ -34,6 +34,7 @@ namespace LAMMPS_NS {
 class AtomVecBondGran : public AtomVec {
  public:
   AtomVecBondGran(class LAMMPS *);
+  void settings(int narg, char **arg);
   //~AtomVecBondGran(){}; //NP P.F. Destructor needed?
   void init();
   void grow(int);
