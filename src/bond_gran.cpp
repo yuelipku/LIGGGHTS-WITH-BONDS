@@ -318,8 +318,8 @@ void BondGran::compute(int eflag, int vflag)
         double ntorque_mag = vectorMag3D(&bondhistlist[n][6]);
         double ttorque_mag = vectorMag3D(&bondhistlist[n][9]);
 
-        bool nstress = sigman_break[type] < (-nforce_mag/A + 2.*ttorque_mag/J*rb[type]);
-        bool tstress = tau_break[type]    < (-tforce_mag/A +    ntorque_mag/J*rb[type]);
+        bool nstress = sigman_break[type] < (nforce_mag/A + 2.*ttorque_mag/J*rb[type]);
+        bool tstress = tau_break[type]    < (tforce_mag/A +    ntorque_mag/J*rb[type]);
         bool toohot = false;
 
         if(breakmode == BREAKSTYLE_STRESS_TEMP)
