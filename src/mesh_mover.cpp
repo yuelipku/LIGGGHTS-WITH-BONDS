@@ -185,6 +185,9 @@ void MeshMoverLinearVariable::initial_integrate(double dTAbs,double dTSetup,doub
     modify->clearstep_compute();
 
     // evaluate variable
+    myvar1_ = input->variable->find(var1str_);
+    myvar2_ = input->variable->find(var2str_);
+    myvar3_ = input->variable->find(var3str_);
     
     vel_[0] = input->variable->compute_equal(myvar1_);
     vel_[1] = input->variable->compute_equal(myvar2_);
@@ -429,6 +432,7 @@ void MeshMoverRotateVariable::initial_integrate(double,double,double dt)
     modify->clearstep_compute();
 
     // re-evaluation of omega (global,private)
+    myvar1_ = input->variable->find(var1str_);
     omega_ = input->variable->compute_equal(myvar1_);
 
     modify->addstep_compute(update->ntimestep + 1);
