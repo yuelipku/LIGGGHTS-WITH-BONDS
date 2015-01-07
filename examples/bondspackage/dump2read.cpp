@@ -1,3 +1,7 @@
+// compile with `g++ -o dump2read dump2read.cpp`
+// ussage: dump2read <liggghts-dumpfile> <outputfilename> <density of particle> <ID-Offset>
+// e.g. `./dump2read post/dump1000.liggghts beam.pour 2500 0`
+
 #include <stdio.h>
 #include <sstream>
 #include <fstream>
@@ -189,7 +193,7 @@ ifstream inFile;
 	ac++;
 	velx=vely=velz=omx=omy=omz=0;
 	//for hybrid pair styles: id type x y z dens rad
-	outfile << ac << " " << type << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << D << " " << dens << endl;
+	outfile << ac << " " << type << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << D << " " << dens << " " << "0" << endl;
 	//part2 << ac <<" "<<velx<<" "<<vely<<" "<<velz<<" "<<omx<<" "<<omy<<" "<<omz<< endl;
      
    } //endwhile
