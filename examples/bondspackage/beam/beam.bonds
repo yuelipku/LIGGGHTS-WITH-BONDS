@@ -118,6 +118,9 @@ shell rm -rf post
 shell mkdir post
 dump		dmp 	all custom  ${filestep} post/dump*.liggghts id type x y z vx vy vz fx fy fz omegax omegay omegaz radius
 
+compute b1 all property/local batom1x batom1y batom1z batom2x batom2y batom2z batom1 batom2 btype
+dump 	bnd all local ${filestep} post/bonds*.bond c_b1[1] c_b1[2] c_b1[3] c_b1[4] c_b1[5] c_b1[6] c_b1[7] c_b1[8] c_b1[9]  #x1 y1 z1 x2 y2 z2 id1 id2 typeofbond BSD
+
 #hole koordinaten von letztem partikel
 variable time equal step*dt
 variable px equal x[${lastone}]
@@ -140,6 +143,4 @@ fix 	tipF tipball addforce  0 0 -$F    #1kip=4.4482216kN
 #quit
 variable t equal 1/dt 	#run 1second
 run $t
-
-
 
