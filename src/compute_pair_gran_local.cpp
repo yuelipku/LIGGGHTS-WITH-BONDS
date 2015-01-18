@@ -221,7 +221,7 @@ void ComputePairGranLocal::init_cpgl(bool requestflag)
   if(hflag && dnum == 0) error->all(FLERR,"Compute pair/gran/local or wall/gran/local can not calculate history values since pair or wall style does not compute them");
   // standard values: pos1,pos2,id1,id2,extra id for mesh wall,force,torque,contact area
 
-  nvalues = posflag*6 + velflag*6 + idflag*3 + fflag*3 + tflag*3 + hflag*dnum + aflag + hfflag;
+  nvalues = posflag*6 + velflag*6 + idflag*3 + fflag*3 + tflag*3 + hflag*dnum + aflag*5 + hfflag; //added ri,rj,distance,overlap to area-computation output
   size_local_cols = nvalues;
 
 }
@@ -424,7 +424,11 @@ void ComputePairGranLocal::add_pair(int i,int j,double fx,double fy,double fz,do
         r = sqrt(rsq);
         contactArea = - M_PI/4 * ( (r-radi-radj)*(r+radi-radj)*(r-radi+radj)*(r+radi+radj) )/rsq;
         array[ipair][n++] = contactArea;
-        
+        array[ipair][n++] = radi; 		//CR radius of 1st particle
+        array[ipair][n++] = radj; 		//CR radius of 2nd particle
+        array[ipair][n++] = r;	  		//CR =sqrt(vectorMag3DSquared(x[i]-x[j])) =distance   
+        array[ipair][n++] = radi+radj-r;	//CR overlap
+    	//printf("[%d]DEBUG: %f %f %f %f %f\n",update->ntimestep,contactArea,radi,radj,r,radi+radj-r);
     }
 
     ipair++;
@@ -547,7 +551,10 @@ void ComputePairGranLocal::add_wall_2(int i,double fx,double fy,double fz,double
     {
         contactArea = (atom->radius[i]*atom->radius[i]-rsq)*M_PI;
         array[ipair][n++] = contactArea;
-        
+        array[ipair][n++] = atom->radius[i]; 				//CR radius of particle
+        array[ipair][n++] = 0;	 					//CR dummy to match particle-particle format
+        array[ipair][n++] = sqrt(rsq);	  				//CR =sqrt(vectorMag3DSquared(x[i]-x[j])) =distance   
+        array[ipair][n++] = atom->radius[i]*atom->radius[i]-rsq;	//CR overlap        
     }
 
     // wall_1 and wall_2 are always called
