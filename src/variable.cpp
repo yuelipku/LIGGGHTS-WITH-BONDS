@@ -275,7 +275,7 @@ void Variable::set(int narg, char **arg)
   // data = 1 value, string to eval
 
   } else if (strcmp(arg[1],"string") == 0) {
-    if (narg != 3) error->all(FLERR,"Illegal variable command");
+    if (narg < 3) {printf("narg=%d",narg);error->all(FLERR,"Illegal variable command");}
     if (find(arg[0]) >= 0) {
       if (style[find(arg[0])] != STRING)
         error->all(FLERR,"Cannot redefine variable as a different style");
@@ -287,7 +287,23 @@ void Variable::set(int narg, char **arg)
     which[nvar] = 0;
     pad[nvar] = 0;
     data[nvar] = new char*[num[nvar]];
-    copy(1,&arg[2],data[nvar]);
+    //copy(1,&arg[2],data[nvar]);
+	    if (narg==3) {
+	    int n=strlen(arg[2])+1;
+	    data[nvar][0]=new char[n];
+	    strcpy(data[nvar][0],arg[2]);
+	    } else if (narg>=4) {
+			  int n=strlen(arg[2])+1;	//preserve one for \0
+			  for (int i=3;i<narg;i++)
+			  	n+=strlen(arg[i])+1;		//preserve one for each space
+	    		  data[nvar][0]=new char[n];
+			  strcpy(data[nvar][0],arg[2]);
+			  for (int i=3;i<narg;i++) {
+				  strcat(data[nvar][0]," ");
+				  strcat(data[nvar][0],arg[i]);
+			  }
+			 }
+
 
   // GETENV
   // remove pre-existing var if also style GETENV (allows it to be reset)
