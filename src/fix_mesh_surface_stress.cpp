@@ -24,6 +24,7 @@
    Christoph Kloss (JKU Linz, DCS Computing GmbH, Linz)
    Philippe Seil (JKU Linz)
    Evan Smuts (U Cape Town, surface velocity rotation)
+   Christian Richter (OVGU Magdeburg, total Stress and normal force Vector properties)
 ------------------------------------------------------------------------- */
 
 #include "fix_mesh_surface_stress.h"
@@ -66,7 +67,7 @@ FixMeshSurfaceStress::FixMeshSurfaceStress(LAMMPS *lmp, int narg, char **arg)
     stress_flag_ = true;
 
     vector_flag = 1;
-    size_vector = 6;
+    size_vector = 13;
     global_freq = 1;
     extvector = 1;
 
@@ -403,8 +404,92 @@ void FixMeshSurfaceStress::calc_total_force()
    return total force or torque component on body
 ------------------------------------------------------------------------- */
 
+double round(double number)
+{
+    double v = 1e8;
+    return floor(number * v + 0.5) / v;
+}
+
 double FixMeshSurfaceStress::compute_vector(int n)
 {
   if(n < 3) return f_total_[n];
-  else      return torque_total_[n-3];
+  else if (n==6) {
+	  //calculate Normal Force by sum of sigma*A over all processes
+	  double FN=0;
+	  for(int i = 0; i < mesh()->sizeLocal(); i++)
+		{
+			FN+=sigma_n(i)*triMesh()->areaElem(i); //=Fnormal(i)/Area				
+		}
+	  MPI_Sum_Scalar(FN,world);
+	return FN;
+  }
+  else if (n==7) {
+	  //calculate pressure in normal direction
+	  double F=0;
+	  double A=0;
+	  for(int i = 0; i < mesh()->sizeLocal(); i++)
+		{
+			F+=sigma_n(i)*triMesh()->areaElem(i);
+			A+=triMesh()->areaElem(i);				
+		}
+	  MPI_Sum_Scalar(F,world);
+	  MPI_Sum_Scalar(A,world);
+	  return F/A;
+  }
+  else if (n==8) {
+	//calculate Normal-X-direction
+	double surfNorm[3];
+	triMesh()->surfaceNorm(0,surfNorm);
+	double e1=fabs(round(surfNorm[0]));
+	for(int i = 1; i < mesh()->sizeLocal(); i++)
+		{
+			triMesh()->surfaceNorm(i,surfNorm);
+			if (fabs(round(surfNorm[0]))!=e1)
+				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
+		}
+	return e1;	
+  }
+  else if (n==9) {
+	//calculate Normal-Y-direction
+	double surfNorm[3];
+	triMesh()->surfaceNorm(0,surfNorm);
+	double e2=fabs(round(surfNorm[1]));
+	for(int i = 1; i < mesh()->sizeLocal(); i++)
+		{
+			triMesh()->surfaceNorm(i,surfNorm);
+			if (fabs(round(surfNorm[1]))!=e2)
+				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
+		}
+	return e2;	
+  }
+  else if (n==10) {
+	//calculate Normal-Z-direction
+	double surfNorm[3];
+	triMesh()->surfaceNorm(0,surfNorm);
+	double e3=fabs(round(surfNorm[2]));
+	for(int i = 1; i < mesh()->sizeLocal(); i++)
+		{
+			triMesh()->surfaceNorm(i,surfNorm);
+			if (fabs(round(surfNorm[2]))!=e3)
+				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
+		}
+	return e3;	
+  }
+  else if (n==11) {
+	  //calculate total area
+	  double A;
+	  A=0;
+	  for(int i = 0; i < mesh()->sizeLocal(); i++)
+		{
+			A+=triMesh()->areaElem(i);
+		}
+	  MPI_Sum_Scalar(A,world);
+	  return A;
+  }
+  else if (n==12) { //Magnitude of f_total
+	return vectorMag3D(f_total_); //is allready summend in calc_total_force 
+  }
+  else      
+	//and as always has it; rock crushes scissors	
+	return torque_total_[n-3];
 }
