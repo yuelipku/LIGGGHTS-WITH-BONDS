@@ -66,7 +66,7 @@ AtomVecBondGran::AtomVecBondGran(LAMMPS *lmp) : AtomVec(lmp)
 
 void AtomVecBondGran::settings(int narg, char **arg)
 {
-
+  if (narg == 0) return;		//in case of restart no arguments are given, instead nbondtypes and bond_per_atom are defined by read_restart_settings
   if (narg != 4) error->all(FLERR,"Invalid atom_style bond/gran command,expecting exactly 4 arguments");
 
   if(strcmp(arg[0],"n_bondtypes"))
@@ -107,7 +107,7 @@ void AtomVecBondGran::grow(int n)
   else nmax = n;
   atom->nmax = nmax;
 
-    tag = memory->grow(atom->tag,nmax,"atom:tag");
+  tag = memory->grow(atom->tag,nmax,"atom:tag");
   type = memory->grow(atom->type,nmax,"atom:type");
   mask = memory->grow(atom->mask,nmax,"atom:mask");
   image = memory->grow(atom->image,nmax,"atom:image");
@@ -120,6 +120,12 @@ void AtomVecBondGran::grow(int n)
   num_bond = memory->grow(atom->num_bond,nmax,"atom:num_bond");
   bond_type = memory->grow(atom->bond_type,nmax,atom->bond_per_atom,"atom:bond_type");
   bond_atom = memory->grow(atom->bond_atom,nmax,atom->bond_per_atom,"atom:bond_atom");
+
+  if(0 == atom->bond_per_atom)
+    error->all(FLERR,"Bonded particles need bond_per_atom > 0");
+
+  if(atom->n_bondhist < 0)
+	  error->all(FLERR,"atom->n_bondhist < 0 suggests that 'bond_style gran' has not been called before 'read_restart' command! Please check that.");
 
   if(atom->n_bondhist)
   {
@@ -657,7 +663,7 @@ int AtomVecBondGran::size_restart()
   {
     n += 13 + 2*num_bond[i];
 
-    if(atom->n_bondhist) n += 1/*num_bondhist*/ + num_bond[i] * num_bondhist/*bond_hist*/;
+    if(atom->n_bondhist) n += 1/*num_bondhist*/ + num_bond[i] * atom->n_bondhist/*bond_hist*/; //CR 26.01.2015
   }
 
   if (atom->nextra_restart)
@@ -753,9 +759,10 @@ int AtomVecBondGran::unpack_restart(double *buf)
   {
       if(atom->n_bondhist != static_cast<int>(buf[m++]))
           error->all(FLERR,"Íncompatibel restart file: file was created using a bond model with a different number of history values");
-      for (k = 0; k < num_bond[nlocal]; k++)
+     printf("num_bond[nlocal]=%d\n",num_bond[nlocal]); 
+     for (k = 0; k < num_bond[nlocal]; k++)
          for (l = 0; l < atom->n_bondhist; l++)
-            bond_hist[nlocal][k][l] = buf[m++];
+            atom->bond_hist[nlocal][k][l] = buf[m++];
   }
 
   double **extra = atom->extra;
@@ -866,6 +873,22 @@ void AtomVecBondGran::pack_data(double **buf,int tag_offset)
 void AtomVecBondGran::write_data(FILE *fp, int n, double **buf)
 {
   error->all(FLERR,"Add usefull code here");
+}
+
+void AtomVecBondGran::write_restart_settings(FILE *fp)
+{
+  fwrite(&atom->nbondtypes,sizeof(int),1,fp);
+  fwrite(&atom->bond_per_atom,sizeof(int),1,fp);
+}
+
+void AtomVecBondGran::read_restart_settings(FILE *fp)
+{
+  if (comm->me == 0) {
+    fread(&atom->nbondtypes,sizeof(int),1,fp);
+    fread(&atom->bond_per_atom,sizeof(int),1,fp);
+  }
+  MPI_Bcast(&atom->nbondtypes,1,MPI_INT,0,world);
+  MPI_Bcast(&atom->bond_per_atom,1,MPI_INT,0,world);
 }
 
 /* ----------------------------------------------------------------------

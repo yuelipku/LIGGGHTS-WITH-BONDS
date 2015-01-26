@@ -26,7 +26,13 @@ communicate	single vel yes
 units		si
 
 region		reg block -$L $L -1 1 -$L 1 units box
-create_box	2 reg #bonds 1 6 			# {num_atom_types} {region} bonds moved into atom_style for LIGGGHTS>=3.X.X
+#create_box	2 reg #bonds 1 6 			# {num_atom_types} {region} bonds moved into atom_style for LIGGGHTS>=3.X.X
+
+#bond
+bond_style 	gran
+
+#read_restart can only work correctly AFTER bond_style is set
+read_restart beam.restart
 
 neighbor	1 bin
 neigh_modify	delay 0
@@ -34,9 +40,6 @@ neigh_modify	delay 0
 #New pair style
 pair_style 	gran model hertz tangential history 
 pair_coeff	* *
-
-#bond
-bond_style 	gran
 
 #for stressbreak
 variable Y  equal 6894.75729*1000*1e4
@@ -62,6 +65,7 @@ print ${ks}
 bond_coeff 	1 ${rb} ${kn} ${ks} 1 1e10 1e10
 #bond_coeff 	1 ${rb} $Y $G 1 1e10 1e10 #N rb Sn_bond St_bond TYPE_OF_BOND r_break|sigma_break tau_break (temp)
 
+
 #Material properties required for new pair styles
 
 fix 		m1 all property/global youngsModulus peratomtype $Y $Y
@@ -71,18 +75,6 @@ fix 		m4 all property/global coefficientFriction peratomtypepair 2 0.3 0.3 0.3 0
 
 mass 		1 1.0 #dummy
 mass 		2 1.0 #dummy
-
-# ================================================
-# create just 11 particles in a zylinder
-# ================================================
-region		bc cylinder x 0.00 0.00 ${rp} 0.0 $L units box
-lattice		sc ${sc}
-create_atoms	1 region bc
-run 1
-
-group 		bonded id >= 1
-set		group all density 2700 diameter $d 
-run 1
 
 variable lastone equal atoms
 
@@ -137,12 +129,10 @@ variable inch equal 0.0254   #mm
 
 variable M equal 100*${KIP}/${inch}
 variable F equal 1*${KIP}		#N
-fix 	tipF tipball addforce  0 0 -$F    #1kip=4.4482216kN
+fix 	tipF tipball addforce  0 0 +$F    #1kip=4.4482216kN
 #fix 	tipM tipball addtorque 0 $M  0	  #nicht moeglich 
 
 #quit
 variable t equal 1/dt 	#run 1second
 run $t
-
-write_restart beam.restart
 
