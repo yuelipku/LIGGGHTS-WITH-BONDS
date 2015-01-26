@@ -759,8 +759,7 @@ int AtomVecBondGran::unpack_restart(double *buf)
   {
       if(atom->n_bondhist != static_cast<int>(buf[m++]))
           error->all(FLERR,"Íncompatibel restart file: file was created using a bond model with a different number of history values");
-     printf("num_bond[nlocal]=%d\n",num_bond[nlocal]); 
-     for (k = 0; k < num_bond[nlocal]; k++)
+      for (k = 0; k < num_bond[nlocal]; k++)
          for (l = 0; l < atom->n_bondhist; l++)
             atom->bond_hist[nlocal][k][l] = buf[m++];
   }
