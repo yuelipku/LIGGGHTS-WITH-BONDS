@@ -7,11 +7,13 @@ variable filestep equal 0.01/${dt}
 ##################################
 
 variable rp equal 10*0.0254   #particle radius
+variable rbreak equal 1.1*${rp}
 variable d  equal 2*${rp}
 variable sc equal $d-0.000000001
 variable c  equal ${d}+0.1
 variable rb equal 0.8*${rp}
 variable L  equal 200*0.0254+${rp}	    #INCH !
+variable 2L equal 2*$L
 
 atom_style	hybrid granular bond/gran n_bondtypes 1 bonds_per_atom 6
 #atom_style	granular
@@ -25,11 +27,11 @@ communicate	single vel yes
 
 units		si
 
-region		reg block -$L $L -1 1 -$L 1 units box
+region		reg block -$L ${2L} -1 1 -$L 1 units box
 create_box	2 reg #bonds 1 6 			# {num_atom_types} {region} bonds moved into atom_style for LIGGGHTS>=3.X.X
 
-neighbor	1 bin
-neigh_modify	delay 0
+neighbor	${sc} bin
+neigh_modify	delay 1
 
 #New pair style
 pair_style 	gran model hertz tangential history 
@@ -59,7 +61,7 @@ print $I
 print $A
 print ${kn}
 print ${ks}
-bond_coeff 	1 ${rb} ${kn} ${ks} 1 1e10 1e10
+bond_coeff 	1 ${rb} ${kn} ${ks} 0 ${sc} #1 1e0 1e0
 #bond_coeff 	1 ${rb} $Y $G 1 1e10 1e10 #N rb Sn_bond St_bond TYPE_OF_BOND r_break|sigma_break tau_break (temp)
 
 #Material properties required for new pair styles
@@ -81,7 +83,7 @@ create_atoms	1 region bc
 run 1
 
 group 		bonded id >= 1
-set		group all density 2700 diameter $d 
+set		group all density 1000 diameter $d 
 run 1
 
 variable lastone equal atoms
@@ -102,10 +104,8 @@ timestep	${dt}
 
 #region and insertion
 
-group		nve_group region reg
-
 #apply nve integration to all particles that are inserted as single particles
-fix		integr nve_group nve/sphere
+fix		integr all nve/sphere
 
 #output settings, include total thermal energyg
 thermo_style	custom step atoms numbond
@@ -137,10 +137,27 @@ variable inch equal 0.0254   #mm
 
 variable M equal 100*${KIP}/${inch}
 variable F equal 1*${KIP}		#N
-fix 	tipF tipball addforce  0 0 -$F    #1kip=4.4482216kN
+#fix 	tipF tipball addforce  0 0 -$F    #1kip=4.4482216kN
 #fix 	tipM tipball addtorque 0 $M  0	  #nicht moeglich 
 
-#quit
+variable vx_tip equal 1 #pull with 1m/s
+#velocity tipball set ${vx_tip} NULL NULL #expected: vel is once set and than the integrator overules the value [confirmed]
+					 #final velocity = initial velocity - F_bond/m*dt (equilibrium of F)
+					 #(gives recvel=0.508*vx_tip)
+
+#velocity tipball set v_vx_tip NULL NULL #expected: vel is set every ts [confirmed] (gives recvel=vx_tip)
+#set atom ${lastone}  vx 1 
+
+#force 'controller'
+variable mball equal mass[${lastone}]
+variable acc equal (${vx_tip}-vx[${lastone}])/dt	#recalculate acc every step
+variable Fpull equal ${mball}*v_acc			#calculate force to accelerate tipball		
+fix 	tipF tipball addforce v_Fpull 0 0 		#apply acc-force every step
+#run 100
+#unfix tipF
+variable recvel equal vx[${lastone}]
+#fix output all print 1 ${recvel} screen yes		#gives NOT the correct velocity output ..
+
 variable t equal 1/dt 	#run 1second
 run $t
 
