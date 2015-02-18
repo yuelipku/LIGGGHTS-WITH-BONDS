@@ -1,15 +1,19 @@
 /* ----------------------------------------------------------------------
-   LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
+   LIGGGHTS® - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
 
-   LIGGGHTS is part of the CFDEMproject
+   LIGGGHTS® is part of CFDEM®project
    www.liggghts.com | www.cfdem.com
 
    Christoph Kloss, christoph.kloss@cfdem.com
    Copyright 2009-2012 JKU Linz
    Copyright 2012-     DCS Computing GmbH, Linz
 
-   LIGGGHTS is based on LAMMPS
+   LIGGGHTS® and CFDEM® are registered trade marks of DCS Computing GmbH,
+   the producer of the LIGGGHTS® software and the CFDEM®coupling software
+   See http://www.cfdem.com/terms-trademark-policy for details.
+
+   LIGGGHTS® is based on LAMMPS
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
@@ -67,7 +71,8 @@ FixMeshSurfaceStress::FixMeshSurfaceStress(LAMMPS *lmp, int narg, char **arg)
     stress_flag_ = true;
 
     vector_flag = 1;
-    size_vector = 13;
+    size_vector = 9;
+
     global_freq = 1;
     extvector = 1;
 
@@ -256,7 +261,7 @@ void FixMeshSurfaceStress::add_particle_contribution(int ip,double *frc,
                                 double *delta,int iTri,double *v_wall)
 {
     double E,c[3],v_rel[3],v_rel_mag,cos_gamma,sin_gamma,sin_2gamma;
-    double contactPoint[3],surfNorm[3], tmp[3], tmp2[3];
+    double contactPoint[3]={},surfNorm[3], tmp[3], tmp2[3];
 
     // do not include if not in fix group
     if(!(atom->mask[ip] & groupbit)) return;
@@ -413,83 +418,6 @@ double round(double number)
 double FixMeshSurfaceStress::compute_vector(int n)
 {
   if(n < 3) return f_total_[n];
-  else if (n==6) {
-	  //calculate Normal Force by sum of sigma*A over all processes
-	  double FN=0;
-	  for(int i = 0; i < mesh()->sizeLocal(); i++)
-		{
-			FN+=sigma_n(i)*triMesh()->areaElem(i); //=Fnormal(i)/Area				
-		}
-	  MPI_Sum_Scalar(FN,world);
-	return FN;
-  }
-  else if (n==7) {
-	  //calculate pressure in normal direction
-	  double F=0;
-	  double A=0;
-	  for(int i = 0; i < mesh()->sizeLocal(); i++)
-		{
-			F+=sigma_n(i)*triMesh()->areaElem(i);
-			A+=triMesh()->areaElem(i);				
-		}
-	  MPI_Sum_Scalar(F,world);
-	  MPI_Sum_Scalar(A,world);
-	  return F/A;
-  }
-  else if (n==8) {
-	//calculate Normal-X-direction
-	double surfNorm[3];
-	triMesh()->surfaceNorm(0,surfNorm);
-	double e1=fabs(round(surfNorm[0]));
-	for(int i = 1; i < mesh()->sizeLocal(); i++)
-		{
-			triMesh()->surfaceNorm(i,surfNorm);
-			if (fabs(round(surfNorm[0]))!=e1)
-				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
-		}
-	return e1;	
-  }
-  else if (n==9) {
-	//calculate Normal-Y-direction
-	double surfNorm[3];
-	triMesh()->surfaceNorm(0,surfNorm);
-	double e2=fabs(round(surfNorm[1]));
-	for(int i = 1; i < mesh()->sizeLocal(); i++)
-		{
-			triMesh()->surfaceNorm(i,surfNorm);
-			if (fabs(round(surfNorm[1]))!=e2)
-				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
-		}
-	return e2;	
-  }
-  else if (n==10) {
-	//calculate Normal-Z-direction
-	double surfNorm[3];
-	triMesh()->surfaceNorm(0,surfNorm);
-	double e3=fabs(round(surfNorm[2]));
-	for(int i = 1; i < mesh()->sizeLocal(); i++)
-		{
-			triMesh()->surfaceNorm(i,surfNorm);
-			if (fabs(round(surfNorm[2]))!=e3)
-				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
-		}
-	return e3;	
-  }
-  else if (n==11) {
-	  //calculate total area
-	  double A;
-	  A=0;
-	  for(int i = 0; i < mesh()->sizeLocal(); i++)
-		{
-			A+=triMesh()->areaElem(i);
-		}
-	  MPI_Sum_Scalar(A,world);
-	  return A;
-  }
-  else if (n==12) { //Magnitude of f_total
-	return vectorMag3D(f_total_); //is allready summend in calc_total_force 
-  }
-  else      
-	//and as always has it; rock crushes scissors	
-	return torque_total_[n-3];
+  else if(n < 6)     return torque_total_[n-3];
+  else return p_ref_(0)[n-6];
 }

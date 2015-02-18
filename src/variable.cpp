@@ -175,7 +175,7 @@ void Variable::set(int narg, char **arg)
     if (find(arg[0]) >= 0) return;
     if (nvar == maxvar) grow();
     style[nvar] = LOOP;
-    int nfirst,nlast;
+    int nfirst=0,nlast=0;
     if (narg == 3 || (narg == 4 && strcmp(arg[3],"pad") == 0)) {
       nfirst = 1;
       nlast = force->inumeric(FLERR,arg[2]);
@@ -567,7 +567,7 @@ char *Variable::retrieve(char *name)
   if (ivar == -1) return NULL;
   if (which[ivar] >= num[ivar]) return NULL;
 
-  char *str;
+  char *str = NULL;
   if (style[ivar] == INDEX || style[ivar] == WORLD ||
       style[ivar] == UNIVERSE || style[ivar] == STRING ||
       style[ivar] == SCALARFILE) {
@@ -643,7 +643,7 @@ void Variable::compute_atom(int ivar, int igroup,
                             double *result, int stride, int sumflag)
 {
   Tree *tree;
-  double *vstore;
+  double *vstore = NULL;
 
   if (style[ivar] == ATOM) {
     evaluate(data[ivar][0],&tree); 
@@ -2505,8 +2505,8 @@ int Variable::math_function(char *word, char *contents, Tree **tree,
 
   // evaluate args
 
-  Tree *newtree;
-  double value1,value2,value3; 
+  Tree *newtree = NULL;
+  double value1=0.0,value2=0.0,value3=0.0; 
 
   if (tree) {
     newtree = new Tree();
@@ -2862,7 +2862,7 @@ int Variable::group_function(char *word, char *contents, Tree **tree,
 
   // match word to group function
 
-  double value;
+  double value = 0.0;
 
   if (strcmp(word,"count") == 0) {
     if (narg == 1) value = group->count(igroup);
@@ -3122,7 +3122,7 @@ int Variable::special_function(char *word, char *contents, Tree **tree,
       strcmp(word,"max") == 0 || strcmp(word,"ave") == 0 ||
       strcmp(word,"trap") == 0) {
 
-    int method;
+    int method = 0;
     if (strcmp(word,"sum") == 0) method = SUM;
     else if (strcmp(word,"min") == 0) method = XMIN;
     else if (strcmp(word,"max") == 0) method = XMAX;
@@ -3134,7 +3134,7 @@ int Variable::special_function(char *word, char *contents, Tree **tree,
 
     Compute *compute = NULL;
     Fix *fix = NULL;
-    int index,nvec,nstride;
+    int index=0,nvec=0,nstride=0;
 
     if (strstr(arg1,"c_") == arg1) {
       ptr1 = strchr(arg1,'[');
