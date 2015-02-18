@@ -65,6 +65,8 @@ class AtomVecBondGran : public AtomVec {
   void pack_data(double **);
   void pack_data(double **buf,int tag_offset); 
   void write_data(FILE *, int, double **);
+  void write_restart_settings(FILE *);
+  void read_restart_settings(FILE *);
 
  private:
   int *tag,*type,*mask,*image;

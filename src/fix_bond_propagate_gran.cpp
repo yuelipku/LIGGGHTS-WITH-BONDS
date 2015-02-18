@@ -211,7 +211,7 @@ inline void FixBondPropagateGran::remove_bond(int ilocal,int ibond, int bondnumb
 
 void FixBondPropagateGran::write_restart(FILE *fp)
 {
-  error->warning(FLERR,"Restart functionality not yet tested for granular bonds...");
+  //error->warning(FLERR,"Restart functionality not yet tested for granular bonds...");
 
   //NP write a dummy value
   int n = 0;
@@ -240,5 +240,5 @@ void FixBondPropagateGran::restart(char *buf)
 
   double dummy = static_cast<int> (list[n++]);
 
-  error->warning(FLERR,"Restart functionality not yet tested for granular bonds...");
+  //error->warning(FLERR,"Restart functionality not yet tested for granular bonds...");
 }
