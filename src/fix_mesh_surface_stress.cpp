@@ -406,7 +406,7 @@ void FixMeshSurfaceStress::calc_total_force()
 
 double round(double number)
 {
-    double v = 1e8;
+    double v = 1e4;
     return floor(number * v + 0.5) / v;
 }
 
@@ -445,7 +445,8 @@ double FixMeshSurfaceStress::compute_vector(int n)
 		{
 			triMesh()->surfaceNorm(i,surfNorm);
 			if (fabs(round(surfNorm[0]))!=e1)
-				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
+				{printf("%1.12f != %1.12f\n",e1,fabs(round(surfNorm[0])));
+				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal e1");} //what is the common norm of a curved mesh ?!
 		}
 	return e1;	
   }
@@ -458,7 +459,8 @@ double FixMeshSurfaceStress::compute_vector(int n)
 		{
 			triMesh()->surfaceNorm(i,surfNorm);
 			if (fabs(round(surfNorm[1]))!=e2)
-				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
+				{printf("%1.12f != %1.12f\n",e2,fabs(round(surfNorm[1])));
+				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal e2");} //what is the common norm of a curved mesh ?!
 		}
 	return e2;	
   }
@@ -471,7 +473,8 @@ double FixMeshSurfaceStress::compute_vector(int n)
 		{
 			triMesh()->surfaceNorm(i,surfNorm);
 			if (fabs(round(surfNorm[2]))!=e3)
-				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal"); //what is the common norm of a curved mesh ?!
+				{printf("%1.12f != %1.12f\n",e3,fabs(round(surfNorm[2])));
+				error->fix_error(FLERR,this,"mesh is not planar, can not calculate surface Normal e3");} //what is the common norm of a curved mesh ?!
 		}
 	return e3;	
   }
