@@ -1,13 +1,17 @@
 /* ----------------------------------------------------------------------
-   LIGGGHTS - LAMMPS Improved for General Granular and Granular Heat
+   LIGGGHTS® - LAMMPS Improved for General Granular and Granular Heat
    Transfer Simulations
 
-   LIGGGHTS is part of the CFDEMproject
+   LIGGGHTS® is part of CFDEM®project
    www.liggghts.com | www.cfdem.com
 
    This file was modified with respect to the release in LAMMPS
    Modifications are Copyright 2009-2012 JKU Linz
                      Copyright 2012-     DCS Computing GmbH, Linz
+
+   LIGGGHTS® and CFDEM® are registered trade marks of DCS Computing GmbH,
+   the producer of the LIGGGHTS® software and the CFDEM®coupling software
+   See http://www.cfdem.com/terms-trademark-policy for details.
 
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    http://lammps.sandia.gov, Sandia National Laboratories
@@ -212,7 +216,7 @@ void Thermo::init()
   // add '/n' every 3 values if lineflag = MULTILINE
   // add trailing '/n' to last value
 
-  char *ptr;
+  char *ptr = NULL;
   for (i = 0; i < nfield; i++) {
     format[i][0] = '\0';
     if (lineflag == MULTILINE && i % 3 == 0) strcat(format[i],"\n");
@@ -666,6 +670,8 @@ void Thermo::parse_fields(char *str)
       addfield("Elaplong",&Thermo::compute_elapsed_long,BIGINT);
     } else if (strcmp(word,"dt") == 0) {
       addfield("Dt",&Thermo::compute_dt,FLOAT);
+    } else if (strcmp(word,"numbond") == 0) {
+      addfield("numbond",&Thermo::compute_numbond,BIGINT);
     } else if (strcmp(word,"time") == 0) {
       addfield("Time",&Thermo::compute_time,FLOAT);
     } else if (strcmp(word,"cpu") == 0) {
@@ -1382,6 +1388,10 @@ int Thermo::evaluate_keyword(char *word, double *answer)
   else if (strcmp(word,"cellalpha") == 0) compute_cellalpha();
   else if (strcmp(word,"cellbeta") == 0) compute_cellbeta();
   else if (strcmp(word,"cellgamma") == 0) compute_cellgamma();
+  else if (strcmp(word,"numbonds") == 0) {
+                                  compute_numbond();
+                                  dvalue = bivalue;
+  }
 
   else return 1;
 
@@ -1957,6 +1967,21 @@ void Thermo::compute_fmax()
   double maxall;
   MPI_Allreduce(&max,&maxall,1,MPI_DOUBLE,MPI_MAX,world);
   dvalue = maxall;
+}
+
+/*------------------*/
+void Thermo::compute_numbond()
+{
+  int nlocal = atom->nlocal;
+
+  bigint numbond = 0;
+  for (int i = 0; i < nlocal; i++)
+    numbond+=atom->num_bond[i];
+//printf("%d at proc %d\n",numbond,comm->me);
+  bigint bondall;
+  MPI_Allreduce(&numbond,&bondall,1,MPI_LMP_BIGINT,MPI_SUM,world);
+  bivalue = bondall/2; //every bond is counted twice (for every partner-atom)
+  //printf("dvalue=%d\n",bivalue);
 }
 
 /* ---------------------------------------------------------------------- */

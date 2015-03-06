@@ -108,7 +108,7 @@ group		nve_group region reg
 fix		integr nve_group nve/sphere
 
 #output settings, include total thermal energyg
-thermo_style	custom step atoms #numbond
+thermo_style	custom step atoms numbond
 thermo		100
 thermo_modify	lost ignore norm no
 compute_modify	thermo_temp dynamic yes
