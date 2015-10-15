@@ -34,14 +34,21 @@
     Contributing author and copyright for this file:
 
     Richard Berger (JKU Linz)
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
     Copyright 2009-2012 JKU Linz
 ------------------------------------------------------------------------- */
 
 #ifdef PAIR_CLASS
+
 PairStyle(gran,PairGranProxy)
+
+PairStyle(bubble,PairGranProxy)
+
+PairStyle(gran_bubble,PairGranProxy)
+
 #else
 
 #ifndef PAIR_GRAN_PROXY_H

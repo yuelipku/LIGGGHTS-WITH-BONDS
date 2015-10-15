@@ -33,11 +33,12 @@
 -------------------------------------------------------------------------
     Contributing author and copyright for this file:
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Richard Berger (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
-    Copyright 2009-2012 JKU Linz
+    Copyright 2013-2014 JKU Linz
 ------------------------------------------------------------------------- */
 
 #ifndef CONTACT_MODELS_H_
@@ -59,12 +60,12 @@ namespace LIGGGHTS {
 
 namespace ContactModels
 {
-  static const int CM_REGISTER_SETTINGS     = 1 << 0;
-  static const int CM_CONNECT_TO_PROPERTIES = 1 << 1;
-  static const int CM_BEGIN_PASS            = 1 << 2;
-  static const int CM_END_PASS              = 1 << 3;
-  static const int CM_SURFACES_INTERSECT        = 1 << 4;
-  static const int CM_SURFACES_CLOSE        = 1 << 5;
+  static const int CM_REGISTER_SETTINGS      = 1 << 0;
+  static const int CM_CONNECT_TO_PROPERTIES  = 1 << 1;
+  static const int CM_BEGIN_PASS             = 1 << 2;
+  static const int CM_END_PASS               = 1 << 3;
+  static const int CM_SURFACES_INTERSECT     = 1 << 4;
+  static const int CM_SURFACES_CLOSE         = 1 << 5;
 
   static const int CONTACT_NORMAL_MODEL      = 1 << 0;
   static const int CONTACT_COHESION_MODEL    = 1 << 1;
@@ -76,7 +77,7 @@ namespace ContactModels
   template
   <
     int M,
-    int T = TANGENTIAL_NO_HISTORY,
+    int T = TANGENTIAL_OFF,
     int C = COHESION_OFF,
     int R = ROLLING_OFF,
     int S = SURFACE_DEFAULT
@@ -102,20 +103,25 @@ namespace ContactModels
   template<int Model>
   class SurfaceModel {
   public:
-    SurfaceModel(LAMMPS * lmp, IContactHistorySetup * hsetup);
+    SurfaceModel(LAMMPS * lmp, IContactHistorySetup * hsetup, class ContactModelBase *cmb = 0);
     inline void beginPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     inline void endPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
+
     inline void registerSettings(Settings & settings);
+    inline void postSettings();
     inline void connectToProperties(PropertyRegistry & registry);
     inline bool checkSurfaceIntersect(SurfacesIntersectData & sidata);
     inline void surfacesIntersect(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
+    inline void endSurfacesIntersect(SurfacesIntersectData & sidata,class TriMesh *mesh);
     inline void surfacesClose(SurfacesCloseData & scdata, ForceData & i_forces, ForceData & j_forces);
+    inline void tally_pp(double val,int i, int j, int index);
+    inline void tally_pw(double val,int i, int j, int index);
   };
 
   template<int Model>
   class NormalModel {
   public:
-    NormalModel(LAMMPS * lmp, IContactHistorySetup * hsetup);
+    NormalModel(LAMMPS * lmp, IContactHistorySetup * hsetup, class ContactModelBase *cmb = 0);
     inline void beginPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     inline void endPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     inline void registerSettings(Settings & settings);
@@ -129,7 +135,7 @@ namespace ContactModels
   template<int Model>
   class TangentialModel {
   public:
-    TangentialModel(LAMMPS * lmp, IContactHistorySetup * hsetup);
+    TangentialModel(LAMMPS * lmp, IContactHistorySetup * hsetup, class ContactModelBase *cmb = 0);
     inline void beginPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     inline void endPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     inline void registerSettings(Settings & settings);
@@ -141,7 +147,7 @@ namespace ContactModels
   template<int Model>
   class CohesionModel {
   public:
-    CohesionModel(LAMMPS * lmp, IContactHistorySetup * hsetup);
+    CohesionModel(LAMMPS * lmp, IContactHistorySetup * hsetup, class ContactModelBase *cmb = 0);
     void beginPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     void endPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     void registerSettings(Settings & settings);
@@ -153,7 +159,7 @@ namespace ContactModels
   template<int Model>
   class RollingModel {
   public:
-    RollingModel(LAMMPS * lmp, IContactHistorySetup * hsetup);
+    RollingModel(LAMMPS * lmp, IContactHistorySetup * hsetup, class ContactModelBase *cmb = 0);
     void beginPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     void endPass(SurfacesIntersectData & sidata, ForceData & i_forces, ForceData & j_forces);
     void registerSettings(Settings & settings);
@@ -162,9 +168,16 @@ namespace ContactModels
     void surfacesClose(SurfacesCloseData & scdata, ForceData & i_forces, ForceData & j_forces);
   };
 
+  class ContactModelBase {
+   public:
+    virtual void tally_pp(double val,int i, int j, int index) = 0;
+    virtual void tally_pw(double val,int i, int j, int index) = 0;
+  };
+
   template<typename Style>
-  class ContactModel {
+  class ContactModel : public ContactModelBase {
   private:
+
     SurfaceModel<Style::SURFACE> surfaceModel;
     NormalModel<Style::MODEL> normalModel;
     CohesionModel<Style::COHESION> cohesionModel;
@@ -187,11 +200,11 @@ namespace ContactModels
     static const int HANDLE_SURFACES_CLOSE        = MASK & CM_SURFACES_CLOSE;
 
     ContactModel(LAMMPS * lmp, IContactHistorySetup * hsetup) :
-      surfaceModel(lmp, hsetup),
-      normalModel(lmp, hsetup),
-      cohesionModel(lmp, hsetup),
-      tangentialModel(lmp, hsetup),
-      rollingModel(lmp, hsetup)
+      surfaceModel(lmp, hsetup,this),
+      normalModel(lmp, hsetup, this),
+      cohesionModel(lmp, hsetup,this),
+      tangentialModel(lmp, hsetup,this),
+      rollingModel(lmp, hsetup,this)
     {
     }
 
@@ -205,6 +218,11 @@ namespace ContactModels
       cohesionModel.registerSettings(settings);
       tangentialModel.registerSettings(settings);
       rollingModel.registerSettings(settings);
+    }
+
+    inline void postSettings()
+    {
+      surfaceModel.postSettings();
     }
 
     inline void connectToProperties(PropertyRegistry & registry)
@@ -239,6 +257,16 @@ namespace ContactModels
       return normalModel.stressStrainExponent();
     }
 
+    void tally_pp(double val,int i, int j, int index)
+    {
+      surfaceModel.tally_pp(val, i, j, index);
+    }
+
+    void tally_pw(double val,int i, int j, int index)
+    {
+      surfaceModel.tally_pw(val, i, j, index);
+    }
+
     inline bool checkSurfaceIntersect(SurfacesIntersectData & sidata)
     {
       return surfaceModel.checkSurfaceIntersect(sidata);
@@ -253,6 +281,11 @@ namespace ContactModels
       rollingModel.surfacesIntersect(sidata, i_forces, j_forces);
     }
 
+    inline void endSurfacesIntersect(SurfacesIntersectData & sidata,class TriMesh *mesh)
+    {
+      surfaceModel.endSurfacesIntersect(sidata,mesh);
+    }
+
     inline void surfacesClose(SurfacesCloseData & scdata, ForceData & i_forces, ForceData & j_forces)
     {
       surfaceModel.surfacesClose(scdata, i_forces, j_forces);
@@ -264,12 +297,27 @@ namespace ContactModels
   };
 
   template<>
+  class TangentialModel<TANGENTIAL_OFF> : protected Pointers
+  {
+  public:
+    static const int MASK = 0;
+
+    TangentialModel(LAMMPS * lmp, IContactHistorySetup*,class ContactModelBase *c) : Pointers(lmp) {}
+    void beginPass(SurfacesIntersectData&, ForceData&, ForceData&){}
+    void endPass(SurfacesIntersectData&, ForceData&, ForceData&){}
+    void connectToProperties(PropertyRegistry&){}
+    void registerSettings(Settings&){}
+    void surfacesIntersect(SurfacesIntersectData&, ForceData&, ForceData&){}
+    void surfacesClose(SurfacesCloseData&, ForceData&, ForceData&){}
+  };
+
+  template<>
   class CohesionModel<COHESION_OFF> : protected Pointers
   {
   public:
     static const int MASK = 0;
 
-    CohesionModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp) {}
+    CohesionModel(LAMMPS * lmp, IContactHistorySetup*,class ContactModelBase *c) : Pointers(lmp) {}
     void beginPass(SurfacesIntersectData&, ForceData&, ForceData&){}
     void endPass(SurfacesIntersectData&, ForceData&, ForceData&){}
     void connectToProperties(PropertyRegistry&){}
@@ -284,7 +332,7 @@ namespace ContactModels
   public:
     static const int MASK = 0;
 
-    RollingModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp) {}
+    RollingModel(LAMMPS * lmp, IContactHistorySetup*,class ContactModelBase *c) : Pointers(lmp) {}
     void beginPass(SurfacesIntersectData&, ForceData&, ForceData&){}
     void endPass(SurfacesIntersectData&, ForceData&, ForceData&){}
     void connectToProperties(PropertyRegistry&){}

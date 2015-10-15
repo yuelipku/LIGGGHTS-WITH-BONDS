@@ -33,7 +33,8 @@
 -------------------------------------------------------------------------
     Contributing author and copyright for this file:
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Philippe Seil (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
@@ -70,6 +71,7 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
         //virtual double distToElem(int nElem, double *p) = 0;
 
         void setCurvature(double _curvature);
+        void setCurvatureTolerant(bool _tol);
         
         bool addElement(double **nodeToAdd,int lineNumb);
 
@@ -141,7 +143,7 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
         void qualityCheck();
 
         void buildNeighbours();
-        void parallelCorrection();
+        virtual void parallelCorrection();
 
         // returns true if surfaces share an edge
         // called with local index
@@ -206,6 +208,7 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
 
         // mesh properties
         double curvature_;
+        bool curvature_tolerant_;
         double minAngle_; 
         ScalarContainer<double>& areaMesh_; 
 
@@ -221,7 +224,7 @@ class SurfaceMesh : public TrackingMesh<NUM_NODES>
         ScalarContainer<double>& area_;
         ScalarContainer<double>& areaAcc_;                    // accumulated area of owned and ghost particles
         VectorContainer<double,NUM_NODES>& edgeLen_;          // len of edgeVec
-        MultiVectorContainer<double,NUM_NODES,3>& edgeVec_;   // unit vec from node0 to node1 etc
+        MultiVectorContainer<double,NUM_NODES,3>& edgeVec_;   // unit vec from node0 to node1, node1 to node2 etc
         MultiVectorContainer<double,NUM_NODES,3>& edgeNorm_;
         VectorContainer<double,3>& surfaceNorm_;
         ScalarContainer<int>& obtuseAngleIndex_;

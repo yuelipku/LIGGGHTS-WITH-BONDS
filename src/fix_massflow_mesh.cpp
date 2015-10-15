@@ -73,8 +73,8 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
   nparticles_deleted_(0),
   once_(false),
   fix_orientation_(0),
-  fix_mesh_(0),
   fix_counter_(0),
+  fix_mesh_(0),
   fix_neighlist_(0),
   havePointAtOutlet_(false),
   insideOut_(false),
@@ -201,7 +201,7 @@ FixMassflowMesh::FixMassflowMesh(LAMMPS *lmp, int narg, char **arg) :
             else error->all(FLERR,"Illegal delete command");
             iarg_ += 2;
             hasargs = true;
-        } else if(strcmp("style","massflow/mesh") == 0)
+        } else if(strcmp(style,"massflow/mesh") == 0)
             error->fix_error(FLERR,this,"unknown keyword");
     }
 
@@ -364,6 +364,7 @@ void FixMassflowMesh::post_integrate()
     double **v = atom->v;
     double *radius = atom->radius;
     double *rmass = atom->rmass;
+    int *mask = atom->mask;
     double *counter = fix_counter_->vector_atom;
     double dot,delta[3]={};
     double mass_this = 0.;
@@ -405,7 +406,12 @@ void FixMassflowMesh::post_integrate()
             const int iPart = neighborList[iNeigh];
 
             // skip ghost particles
-            if(iPart >= nlocal) continue;
+            if(iPart >= nlocal)
+                continue;
+
+            // skip particles not in fix group
+            if (!(mask[iPart] & groupbit))
+                continue;
 
             const int ibody = fix_ms_ ? ( (fix_ms_->belongs_to(iPart) > -1) ? (ms_->map(fix_ms_->belongs_to(iPart))) : -1 ) : -1;
 

@@ -60,6 +60,7 @@ inline void __trace__()
 
 inline void __debug__(LAMMPS* lmp)
 {
+    //printf("DEBUG");
     
 }
 

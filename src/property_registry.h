@@ -35,7 +35,8 @@
     (if not contributing author is listed, this file has been contributed
     by the core developer)
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Richard Berger (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
@@ -148,6 +149,9 @@ public:
   }
 
   void print_value(FILE* out) {
+    if (!out)  // out == NULL
+      return;
+
     fprintf(out, "[");
     for(int row = 1; row < rows; row++) {
       for(int col = 1; col < cols; col++) {

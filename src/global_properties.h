@@ -33,7 +33,8 @@
 -------------------------------------------------------------------------
     Contributing author and copyright for this file:
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Richard Berger (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
@@ -54,15 +55,18 @@ namespace MODEL_PARAMS
 
   ScalarProperty* createScalarProperty(PropertyRegistry & registry, const char* name, const char * caller);
 
+  VectorProperty* createPerTypeProperty(PropertyRegistry & registry, const char* name, const char * caller);
+
   MatrixProperty* createPerTypePairProperty(PropertyRegistry & registry, const char * name, const char * caller);
 
   /* -----------------------------------------------------------------------
    * Property Creators
    * ----------------------------------------------------------------------- */
 
-  ScalarProperty* createCharacteristicVelocity(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCohesionEnergyDensity(PropertyRegistry & registry, const char * caller, bool sanity_checks);
-  VectorProperty* createYoungsModulus(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  VectorProperty* createCohesionDistanceSettings(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  ScalarProperty* createCharacteristicVelocity(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  VectorProperty* createYoungsModulus(PropertyRegistry & registry, const char * caller, bool sanity_checks) ;
   VectorProperty* createPoissonsRatio(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createYeff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createGeff(PropertyRegistry & registry, const char * caller, bool sanity_checks);
@@ -76,6 +80,7 @@ namespace MODEL_PARAMS
   MatrixProperty* createCoeffMu(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffRestMax(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   MatrixProperty* createCoeffStc(PropertyRegistry & registry, const char * caller, bool sanity_checks);
+  ScalarProperty* createRollingStiffness(PropertyRegistry & registry, const char * caller, bool sanity_checks);
 
   ScalarProperty* createLiquidVolume(PropertyRegistry & registry, const char * caller, bool sanity_checks);
   ScalarProperty* createSurfaceTension(PropertyRegistry & registry, const char * caller, bool sanity_checks);

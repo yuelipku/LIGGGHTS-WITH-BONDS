@@ -33,7 +33,8 @@
 -------------------------------------------------------------------------
     Contributing author and copyright for this file:
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Richard Berger (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
@@ -60,19 +61,30 @@ namespace ContactModels
   public:
     static const int MASK = CM_SURFACES_INTERSECT;
 
-    SurfaceModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp)
+    SurfaceModel(LAMMPS * lmp, IContactHistorySetup*, class ContactModelBase *) :
+        Pointers(lmp)
     {
       
     }
 
     inline void registerSettings(Settings&) {}
+    inline void postSettings() {}
     inline void connectToProperties(PropertyRegistry&) {}
 
-    inline bool checkSurfaceIntersect(SurfacesIntersectData &)
-    { return true; }
+    inline bool checkSurfaceIntersect(SurfacesIntersectData & sidata)
+    {
+      #ifdef SUPERQUADRIC_ACTIVE_FLAG
+          sidata.is_non_spherical = false;
+      #endif
+      return true;
+    }
 
     inline void surfacesIntersect(SurfacesIntersectData & sidata, ForceData&, ForceData&)
     {
+      #ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if(sidata.is_non_spherical)
+        error->one(FLERR,"Using default surface model for non-spherical particles!");
+      #endif
       const double enx = sidata.en[0];
       const double eny = sidata.en[1];
       const double enz = sidata.en[2];
@@ -131,11 +143,15 @@ namespace ContactModels
       sidata.vtr1 = vtr1;
       sidata.vtr2 = vtr2;
       sidata.vtr3 = vtr3;
+      sidata.P_diss = 0.;
     }
 
+    inline void endSurfacesIntersect(SurfacesIntersectData&,TriMesh *) {}
     inline void surfacesClose(SurfacesCloseData&, ForceData&, ForceData&){}
     void beginPass(SurfacesIntersectData&, ForceData&, ForceData&){}
     void endPass(SurfacesIntersectData&, ForceData&, ForceData&){}
+    inline void tally_pp(double,int,int,int) {}
+    inline void tally_pw(double,int,int,int) {}
   };
 }
 }

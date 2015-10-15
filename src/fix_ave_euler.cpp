@@ -149,13 +149,6 @@ FixAveEuler::FixAveEuler(LAMMPS *lmp, int narg, char **arg) :
        delete []errmsg;
      }
   }
-
-  // add nfirst to all computes that store invocation times
-  // since don't know a priori which are invoked via variables by this fix
-  // once in end_of_step() can set timestep for ones actually invoked
-
-  bigint nfirst = (update->ntimestep/nevery)*nevery + nevery;
-  modify->addstep_compute_all(nfirst);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -191,6 +184,10 @@ void FixAveEuler::post_create()
         modify->add_compute(4,(char**)arg);
         compute_stress_ = static_cast<ComputeStressAtom*>(modify->compute[modify->find_compute(arg[0])]);
   }
+
+  // ensure that the compute is calculated in the first time step
+  bigint nfirst = (update->ntimestep/nevery)*nevery + nevery;
+  compute_stress_->addstep(nfirst);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -241,7 +238,7 @@ void FixAveEuler::init()
 void FixAveEuler::setup(int vflag)
 {
     setup_bins();
-    //end_of_step();
+    end_of_step();
 }
 
 /* ----------------------------------------------------------------------
@@ -596,7 +593,7 @@ void FixAveEuler::calculate_eu()
     for(int icell = 0; icell < ncells_; icell++)
     {
         // calculate average vel and radius
-        if(ncount_[icell]) vectorScalarDiv3D(v_av_[icell],static_cast<double>(ncount_[icell])*mass_[icell]);
+        if(ncount_[icell]) vectorScalarDiv3D(v_av_[icell],mass_[icell]);
         if(ncount_[icell]) radius_[icell]/=static_cast<double>(ncount_[icell]);
 
         // calculate volume fraction

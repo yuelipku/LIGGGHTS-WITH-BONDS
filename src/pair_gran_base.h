@@ -35,7 +35,8 @@
     (if not contributing author is listed, this file has been contributed
     by the core developer)
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Richard Berger (JKU Linz)
     Alexander Podlozhnyuk (DCS Computing GmbH, Linz)
 
@@ -47,11 +48,14 @@
 #define PAIR_GRAN_BASE_H_
 
 #include "contact_interface.h"
-#include "superquadric.h"
+#include "superquadric_flag.h"
 #include "math_extra_liggghts.h"
+
 #ifdef SUPERQUADRIC_ACTIVE_FLAG
 #include "math_extra_liggghts_superquadric.h"
+#include "math_const.h"
 #endif
+
 #include "pair_gran.h"
 #include "neighbor.h"
 #include "neigh_list.h"
@@ -103,6 +107,7 @@ public:
     Settings settings(lmp);
     cmodel.registerSettings(settings);
     bool success = settings.parseArguments(nargs, args);
+    cmodel.postSettings();
 
 #ifdef LIGGGHTS_DEBUG
     if(comm->me == 0) {
@@ -184,6 +189,7 @@ public:
     double **quat = atom->quaternion;
     double **shape = atom->shape;
     double **roundness = atom->roundness;
+    double **inertia = atom->inertia;
 #endif // SUPERQUADRIC_ACTIVE_FLAG
     const int newton_pair = force->newton_pair;
 
@@ -229,6 +235,16 @@ public:
 
       sidata.i = i;
       sidata.radi = radi;
+      #ifdef SUPERQUADRIC_ACTIVE_FLAG
+          if(superquadric_flag) {
+            sidata.pos_i = x[i];
+            sidata.quat_i = quat[i];
+            sidata.shape_i = shape[i];
+            sidata.roundness_i = roundness[i];
+            sidata.radi = pow(0.75 * atom->volume[i] / M_PI, MathConst::THIRD);
+            sidata.inertia_i = inertia[i];
+          }
+      #endif
 
       for (int jj = 0; jj < jnum; jj++) {
         const int j = jlist[jj] & NEIGHMASK;
@@ -249,21 +265,20 @@ public:
         sidata.radsum = radsum;
         sidata.contact_flags = contact_flags ? &contact_flags[jj] : NULL;
         sidata.contact_history = all_contact_hist ? &all_contact_hist[dnum*jj] : NULL;
+        #ifdef SUPERQUADRIC_ACTIVE_FLAG
+            if(superquadric_flag) {
+              sidata.pos_j = x[j];
+              sidata.quat_j = quat[j];
+              sidata.shape_j = shape[j];
+              sidata.roundness_j = roundness[j];
+              sidata.radj = pow(0.75 * atom->volume[j] / M_PI, MathConst::THIRD);
+              sidata.inertia_j = inertia[j];
+            }
+        #endif
 
         i_forces.reset();
         j_forces.reset();
-#ifdef SUPERQUADRIC_ACTIVE_FLAG
-        if(superquadric_flag) {
-          sidata.quat_i = quat[i];
-          sidata.quat_j = quat[j];
-          sidata.shape_i = shape[i];
-          sidata.shape_j = shape[j];
-          sidata.roundness_i = roundness[i];
-          sidata.roundness_j = roundness[j];
-          sidata.pos_i = x[i];
-          sidata.pos_j = x[j];
-        }
-#endif
+
         // rsq < radsum * radsum is broad phase check with bounding spheres
         // cmodel.checkSurfaceIntersect() is narrow phase check
         
@@ -271,10 +286,11 @@ public:
           const double r = sqrt(rsq);
           const double rinv = 1.0 / r;
 
-          // unit normal vector
-          const double enx = delx * rinv;
-          const double eny = dely * rinv;
-          const double enz = delz * rinv;
+          // unit normal vector for case of spherical particles
+          // for non-spherical, this is done by surface model
+          const double enx_sphere = delx * rinv;
+          const double eny_sphere = dely * rinv;
+          const double enz_sphere = delz * rinv;
 
           // meff = effective mass of pair of particles
           // if I or J part of rigid body, use body mass
@@ -311,15 +327,19 @@ public:
           sidata.meff = meff;
           sidata.mi = mi;
           sidata.mj = mj;
-          sidata.en[0]   = enx;
-          sidata.en[1]   = eny;
-          sidata.en[2]   = enz;
+          if(atom->sphere_flag) {
+              sidata.en[0]   = enx_sphere;
+              sidata.en[1]   = eny_sphere;
+              sidata.en[2]   = enz_sphere;
+          }
           sidata.v_i     = v[i];
           sidata.v_j     = v[j];
           sidata.omega_i = omega[i];
           sidata.omega_j = omega[j];
 
           cmodel.surfacesIntersect(sidata, i_forces, j_forces);
+
+          cmodel.endSurfacesIntersect(sidata,0);
 
           // if there is a surface touch, there will always be a force
           sidata.has_force_update = true;

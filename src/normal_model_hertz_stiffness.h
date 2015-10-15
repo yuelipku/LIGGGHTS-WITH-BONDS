@@ -33,7 +33,8 @@
 -------------------------------------------------------------------------
     Contributing author and copyright for this file:
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Richard Berger (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
@@ -58,7 +59,7 @@ namespace ContactModels
   public:
     static const int MASK = CM_REGISTER_SETTINGS | CM_CONNECT_TO_PROPERTIES | CM_SURFACES_INTERSECT;
 
-    NormalModel(LAMMPS * lmp, IContactHistorySetup*) : Pointers(lmp),
+    NormalModel(LAMMPS * lmp, IContactHistorySetup*,class ContactModelBase *) : Pointers(lmp),
       k_n(NULL),
       k_t(NULL),
       gamma_n(NULL),
@@ -106,6 +107,10 @@ namespace ContactModels
       const int jtype = sidata.jtype;
       double meff = sidata.meff;
       double reff = sidata.is_wall ? sidata.radi : (sidata.radi*sidata.radj/(sidata.radi+sidata.radj));
+#ifdef SUPERQUADRIC_ACTIVE_FLAG
+      if(sidata.is_non_spherical)
+        reff = MathExtraLiggghtsSuperquadric::get_effective_radius(sidata);
+#endif
 
       const double polyhertz = sqrt(reff*sidata.deltan);
       double kn = polyhertz*k_n[itype][jtype];
@@ -129,7 +134,7 @@ namespace ContactModels
       kt /= force->nktv2p;
 
       const double Fn_damping = -gamman*sidata.vn;
-      const double Fn_contact = kn*(sidata.radsum-sidata.r);
+      const double Fn_contact = kn*sidata.deltan;
       double Fn               = Fn_damping + Fn_contact;
 
       //limit force to avoid the artefact of negative repulsion force
@@ -144,12 +149,29 @@ namespace ContactModels
       sidata.gamman = gamman;
       sidata.gammat = gammat;
 
+      #ifdef SUPERQUADRIC_ACTIVE_FLAG
+          double torque_i[3];
+          double Fn_i[3] = { Fn * sidata.en[0], Fn * sidata.en[1], Fn * sidata.en[2]};
+          if(sidata.is_non_spherical) {
+            double xci[3];
+            vectorSubtract3D(sidata.contact_point, sidata.pos_i, xci);
+            vectorCross3D(xci, Fn_i, torque_i);
+          }
+      #endif
       // apply normal force
       if(sidata.is_wall) {
         const double Fn_ = Fn * sidata.area_ratio;
         i_forces.delta_F[0] = Fn_ * sidata.en[0];
         i_forces.delta_F[1] = Fn_ * sidata.en[1];
         i_forces.delta_F[2] = Fn_ * sidata.en[2];
+        #ifdef SUPERQUADRIC_ACTIVE_FLAG
+                if(sidata.is_non_spherical) {
+                  //for non-spherical particles normal force can produce torque!
+                  i_forces.delta_torque[0] += torque_i[0];
+                  i_forces.delta_torque[1] += torque_i[1];
+                  i_forces.delta_torque[2] += torque_i[2];
+                }
+        #endif
       } else {
         i_forces.delta_F[0] = sidata.Fn * sidata.en[0];
         i_forces.delta_F[1] = sidata.Fn * sidata.en[1];
@@ -158,6 +180,23 @@ namespace ContactModels
         j_forces.delta_F[0] = -i_forces.delta_F[0];
         j_forces.delta_F[1] = -i_forces.delta_F[1];
         j_forces.delta_F[2] = -i_forces.delta_F[2];
+        #ifdef SUPERQUADRIC_ACTIVE_FLAG
+                if(sidata.is_non_spherical) {
+                  //for non-spherical particles normal force can produce torque!
+                  double xcj[3], torque_j[3];
+                  double Fn_j[3] = { -Fn_i[0], -Fn_i[1], -Fn_i[2]};
+                  vectorSubtract3D(sidata.contact_point, sidata.pos_j, xcj);
+                  vectorCross3D(xcj, Fn_j, torque_j);
+
+                  i_forces.delta_torque[0] += torque_i[0];
+                  i_forces.delta_torque[1] += torque_i[1];
+                  i_forces.delta_torque[2] += torque_i[2];
+
+                  j_forces.delta_torque[0] += torque_j[0];
+                  j_forces.delta_torque[1] += torque_j[1];
+                  j_forces.delta_torque[2] += torque_j[2];
+                }
+        #endif
       }
     }
 

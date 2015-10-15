@@ -33,7 +33,8 @@
 -------------------------------------------------------------------------
     Contributing author and copyright for this file:
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Richard Berger (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
@@ -61,6 +62,7 @@ static const int identifier = constant;
 #undef NORMAL_MODEL
 
   // tangential models
+  static const int TANGENTIAL_OFF = 0;
 #define TANGENTIAL_MODEL(identifier,str,constant) \
   static const int identifier = constant;
 #include "style_tangential_model.h"

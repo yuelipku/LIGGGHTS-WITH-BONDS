@@ -33,7 +33,8 @@
 -------------------------------------------------------------------------
     Contributing author and copyright for this file:
 
-    Christoph Kloss (DCS Computing GmbH, Linz, JKU Linz)
+    Christoph Kloss (DCS Computing GmbH, Linz)
+    Christoph Kloss (JKU Linz)
     Philippe Seil (JKU Linz)
 
     Copyright 2012-     DCS Computing GmbH, Linz
@@ -69,7 +70,7 @@ using namespace LAMMPS_NS;
     scalePower_(-1),
     useDefault_(false)
   {
-      if(id_)
+      if(_id)
       {
         id_ = new char[strlen(_id)+1];
         strcpy(id_,_id);

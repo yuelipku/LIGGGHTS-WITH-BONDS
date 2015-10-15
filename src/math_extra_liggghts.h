@@ -75,6 +75,8 @@ namespace MathExtraLiggghts {
   inline double min(double a,double b,double c,double d);
   inline double min(double *input, int n,int &which);
   inline double max(double *input, int n,int &which);
+  inline double min(int *input, int n,int &which);
+  inline double max(int *input, int n,int &which);
   inline double abs(double a);
 
   inline void matrix_invert_4x4_special(double matrix[4][4]);
@@ -151,16 +153,16 @@ inline double MathExtraLiggghts::cbrt_5d(double d)
 
 inline double MathExtraLiggghts::cbrta_halleyd(const double a, const double R)
 {
-        const double a3 = a*a*a;
+    const double a3 = a*a*a;
     const double b= a * (a3 + R + R) / (a3 + a3 + R);
-        return b;
+    return b;
 }
 
 // cube root approximation using 1 iteration of Halley's method (double)
 inline double MathExtraLiggghts::halley_cbrt1d(double d)
 {
-        double a = cbrt_5d(d);
-        return cbrta_halleyd(a, d);
+    double a = cbrt_5d(d);
+    return cbrta_halleyd(a, d);
 }
 
 /* ----------------------------------------------------------------------
@@ -210,6 +212,37 @@ inline double MathExtraLiggghts::halley_cbrt1d(double d)
       return min;
   }
   double MathExtraLiggghts::max(double *input, int n,int &which)
+  {
+      double max = input[0];
+      which = 0;
+
+      for(int i = 1; i < n; i++)
+      {
+          if(input[i] > max)
+          {
+              which = i;
+              max = input[i];
+          }
+      }
+      return max;
+  }
+
+  double MathExtraLiggghts::min(int *input, int n,int &which)
+  {
+      double min = input[0];
+      which = 0;
+
+      for(int i = 1; i < n; i++)
+      {
+          if(input[i] < min)
+          {
+              which = i;
+              min = input[i];
+          }
+      }
+      return min;
+  }
+  double MathExtraLiggghts::max(int *input, int n,int &which)
   {
       double max = input[0];
       which = 0;
@@ -600,7 +633,7 @@ void MathExtraLiggghts::generateComplementBasis(double *uVec, double *vVec, doub
     if ( abs(direction[0]) >= abs(direction[1]) )
     {
         // direction.x or direction.z is the largest magnitude component, swap them
-        invLength = 1.0/sqrt ( direction[0]*direction[0]
+        invLength = 1.0/::sqrt ( direction[0]*direction[0]
                               +direction[2]*direction[2]
                              );
         uVec[0] = -direction[2]*invLength;
@@ -615,7 +648,7 @@ void MathExtraLiggghts::generateComplementBasis(double *uVec, double *vVec, doub
     else
     {
         // direction.y or direction.z is the largest magnitude component, swap them
-        invLength = 1.0/sqrt ( direction[1]*direction[1]
+        invLength = 1.0/::sqrt ( direction[1]*direction[1]
                               +direction[2]*direction[2]
                              );
 
